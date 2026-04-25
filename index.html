@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <title>Student Manager</title>
+</head>
+
+<body>
+
+    <h2>Add Student</h2>
+    <input id="name" placeholder="Name">
+    <input id="age" placeholder="Age">
+    <button onclick="addStudent()">Add</button>
+
+    <h2>Filter</h2>
+    <input id="search" placeholder="Search by name">
+    <button onclick="search()">Search</button>
+    <button onclick="loadStudents()">All</button>
+    <button onclick="loadDeleted()">Show Deleted</button>
+
+    <h2>Students</h2>
+    <ul id="list"></ul>
+
+    <script>
+        const API = "http://127.0.0.1:8000";
+
+        async function addStudent() {
+            const name = document.getElementById("name").value;
+            const age = document.getElementById("age").value;
+
+            await fetch(API + "/students", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ name, age })
+            });
+
+            loadStudents();
+        }
+
+        async function loadStudents() {
+            const res = await fetch(API + "/students");
+            const data = await res.json();
+            render(data);
+        }
+
+        async function loadDeleted() {
+            const res = await fetch(API + "/students?show_deleted=true");
+            const data = await res.json();
+            render(data);
+        }
+
+        async function search() {
+            const name = document.getElementById("search").value;
+            const res = await fetch(API + "/students?name=" + name);
+            const data = await res.json();
+            render(data);
+        }
+
+        function render(data) {
+            const list = document.getElementById("list");
+            list.innerHTML = "";
+
+            data.forEach(s => {
+                const li = document.createElement("li");
+
+                li.innerHTML = `
+      ${s.name} (${s.age}) 
+      ${s.deleted ? "[DELETED]" : ""}
+      <button onclick="del(${s.id})">Delete</button>
+      <button onclick="restore(${s.id})">Restore</button>
+      <button onclick="purge(${s.id})">Purge</button>
+    `;
+
+                list.appendChild(li);
+            });
+        }
+
+        async function del(id) {
+            await fetch(API + "/students/" + id, { method: "DELETE" });
+            loadStudents();
+        }
+
+        async function restore(id) {
+            await fetch(API + "/students/" + id + "/restore", { method: "PATCH" });
+            loadStudents();
+        }
+
+        async function purge(id) {
+            await fetch(API + "/students/" + id + "/purge", { method: "DELETE" });
+            loadStudents();
+        }
+    </script>
+
+</body>
+
+</html>
